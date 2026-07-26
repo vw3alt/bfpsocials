@@ -12,7 +12,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # 2. Install FFmpeg & Python Dependencies
 echo "Installing FFmpeg and Python libraries..."
-brew install ffmpeg
+brew install python ffmpeg
 pip3 install moviepy proglog
 
 # 3. Build the double-clickable Mac App Bundle on Desktop

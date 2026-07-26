@@ -1,4 +1,5 @@
 import http.server
+from http.server import ThreadingHTTPServer
 import socketserver
 import json
 import os
@@ -8,6 +9,7 @@ import urllib.request
 import webbrowser
 import threading
 import time
+import re
 from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip
 from moviepy.video.fx import CrossFadeIn, CrossFadeOut
 from proglog import ProgressBarLogger
@@ -143,8 +145,19 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
 
             progress_data = {"percent": 0, "action": "Assembling clips..."}
             final_clip = concatenate_videoclips(clips, padding=-fade_duration, method="compose")
+
+            # --- NEW LINE: Trim the first 2 frames (~0.7 seconds at 24fps) to avoid a black thumbnail ---
+            final_clip = final_clip.subclipped(2.0 / 24.0)
             
-            output_filename = "output_reel.mp4"
+            custom_title = form.getvalue('reel_title', '').strip()
+            if custom_title:
+                # Remove spaces and invalid characters for a safe filename
+                safe_title = re.sub(r'[^A-Za-z0-9_\-]', '_', custom_title)
+                output_filename = f"{safe_title}.mp4"
+            else:
+                # Fallback if no title is provided
+                output_filename = f"Reel_{int(time.time())}.mp4"
+                
             output_path = os.path.join(BASE_DIR, output_filename)
             
             audio_clip = AudioFileClip(audio_path)
@@ -154,7 +167,15 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
             final_clip = final_clip.with_audio(audio_clip)
 
             logger = MyBarLogger()
-            final_clip.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac", logger=logger)
+            final_clip.write_videofile(
+                output_path, 
+                fps=24, 
+                codec="libx264", 
+                audio_codec="aac", 
+                preset="ultrafast",
+                threads=1,
+                logger=logger
+            )
 
             final_clip.close()
             audio_clip.close()
@@ -186,7 +207,7 @@ def monitor_heartbeat(server):
         time.sleep(1)
 
 
-with socketserver.TCPServer(("", PORT), VideoMakerHandler) as httpd:
+with ThreadingHTTPServer(("", PORT), VideoMakerHandler) as httpd:
     print(f"Server running at http://localhost:{PORT}")
     
     # Start the watchdog thread

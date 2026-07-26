@@ -15,7 +15,7 @@
         h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 25px; letter-spacing: -0.5px; }
         .form-group { margin-bottom: 22px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
-        input[type="number"], select, input[type="file"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; background: #fdfdfd; }
+        input[type="number"], input[type="text"], select, input[type="file"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; background: #fdfdfd; }
         
         /* Drag & Drop Area */
         #drop-zone { border: 2px dashed #9ca3af; padding: 25px; text-align: center; border-radius: 8px; cursor: pointer; background: #f9fafb; transition: 0.2s; color: #6b7280; font-weight: 500; font-size: 14px; margin-bottom: 15px; }
@@ -92,6 +92,11 @@
                         <label>Fade Transition</label>
                         <input type="number" name="fade" value="0.5" step="0.1" min="0.1">
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Reel Title (Optional)</label>
+                    <input type="text" name="reel_title" placeholder="e.g., SummerPromo">
                 </div>
 
                 <button type="submit" id="generate-btn" class="btn">Generate Reel</button>
@@ -302,7 +307,7 @@
                 if (result.status === 'success') {
                     const a = document.createElement('a');
                     a.href = `/${result.file}`;
-                    a.download = `Reel_${Date.now()}.mp4`;
+                    a.download = result.file;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
