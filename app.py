@@ -5,6 +5,9 @@ import os
 import shutil
 import cgi
 import urllib.request
+import webbrowser
+import threading
+import time
 from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip
 from moviepy.video.fx import CrossFadeIn, CrossFadeOut
 from proglog import ProgressBarLogger
@@ -19,6 +22,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 progress_data = {"percent": 0, "action": "Initializing..."}
+last_heartbeat = time.time()
 
 class MyBarLogger(ProgressBarLogger):
     def bars_callback(self, bar, attr, value, old_value):
@@ -34,7 +38,13 @@ class MyBarLogger(ProgressBarLogger):
 
 class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/audio-list':
+        global last_heartbeat
+        if self.path == '/heartbeat':
+            # Receive ping from the browser
+            last_heartbeat = time.time()
+            self.send_response(200)
+            self.end_headers()
+        elif self.path == '/audio-list':
             files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.mp3')]
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -63,7 +73,6 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
             duration = float(form.getvalue('duration', 4.0))
             fade_duration = float(form.getvalue('fade', 0.5))
 
-            # Handle Audio
             audio_path = None
             if 'custom_audio' in form and form['custom_audio'].filename:
                 audio_file = form['custom_audio']
@@ -79,7 +88,6 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(400, "Error: Audio file not found or selected.")
                 return
 
-            # Handle Images (Mixed Files and Web URLs)
             image_paths = []
             total_items = int(form.getvalue('total_items', 0))
             
@@ -97,8 +105,7 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
                     url = form.getvalue(url_key)
                     if url:
                         try:
-                            # Bypass blocks by masquerading as a standard browser
-                            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                             with urllib.request.urlopen(req) as response:
                                 img_path = os.path.join(TEMP_DIR, f"img_web_{i}.jpg")
                                 with open(img_path, 'wb') as f:
@@ -111,7 +118,6 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(400, "Error: No images were successfully loaded.")
                 return
 
-            # Build Video
             target_w, target_h = 1080, 1920
             clips = []
             img_clips_to_close = []
@@ -150,13 +156,11 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
             logger = MyBarLogger()
             final_clip.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac", logger=logger)
 
-            # Close Handles
             final_clip.close()
             audio_clip.close()
             for c in clips: c.close()
             for ic in img_clips_to_close: ic.close()
 
-            # Cleanup
             try:
                 shutil.rmtree(TEMP_DIR)
             except Exception:
@@ -169,6 +173,27 @@ class VideoMakerHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"status": "success", "file": output_filename}).encode('utf-8'))
 
+
+def monitor_heartbeat(server):
+    """Background thread that kills the server if the browser tab is closed."""
+    global last_heartbeat
+    time.sleep(5) # Give the browser time to open initially
+    while True:
+        # If no ping received for 5 seconds, assume tab is closed
+        if time.time() - last_heartbeat > 5.0:
+            print("\nBrowser tab closed. Shutting down server...")
+            os._exit(0) # Forcefully kill the python process
+        time.sleep(1)
+
+
 with socketserver.TCPServer(("", PORT), VideoMakerHandler) as httpd:
     print(f"Server running at http://localhost:{PORT}")
+    
+    # Start the watchdog thread
+    threading.Thread(target=monitor_heartbeat, args=(httpd,), daemon=True).start()
+    
+    # Automatically open the browser
+    webbrowser.open(f'http://localhost:{PORT}')
+    
+    # Start serving
     httpd.serve_forever()

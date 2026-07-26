@@ -318,6 +318,11 @@
                 btn.innerText = "Try Again";
             }
         };
+        // --- Server Keep-Alive Heartbeat ---
+        // Sends a silent ping every 2 seconds. If the server misses it, it shuts down.
+        setInterval(() => {
+            fetch('/heartbeat').catch(() => {});
+        }, 2000);
     </script>
 </body>
 </html>
