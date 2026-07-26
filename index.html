@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Broadlands Family Practice Reel Studio</title>
+    <style>
+        :root { --primary: #24477A; --bg: #f3f4f6; --card: #ffffff; --text: #111827; --border: #e5e7eb; --radius: 12px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
+        
+        /* 2-Column Layout */
+        .layout-wrapper { display: flex; gap: 30px; width: 100%; max-width: 950px; background: var(--card); padding: 35px; border-radius: var(--radius); box-shadow: 0 4px 24px rgba(0,0,0,0.06); border: 1px solid var(--border); align-items: flex-start; }
+        .form-col { flex: 1.2; }
+        .video-col { flex: 0.8; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb; border-radius: var(--radius); padding: 20px; border: 1px dashed #d1d5db; min-height: 400px; }
+        
+        h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 25px; letter-spacing: -0.5px; }
+        .form-group { margin-bottom: 22px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="number"], select, input[type="file"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; background: #fdfdfd; }
+        
+        /* Drag & Drop Area */
+        #drop-zone { border: 2px dashed #9ca3af; padding: 25px; text-align: center; border-radius: 8px; cursor: pointer; background: #f9fafb; transition: 0.2s; color: #6b7280; font-weight: 500; font-size: 14px; margin-bottom: 15px; }
+        #drop-zone:hover, #drop-zone.dragover { background: #f3f4f6; border-color: var(--primary); color: var(--primary); }
+        
+        /* Photo List Styling */
+        #photo-list { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow-y: auto; }
+        #photo-list li { padding: 8px 12px; margin-bottom: 8px; background: white; border: 1px solid var(--border); border-radius: 8px; cursor: grab; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        #photo-list li:active { cursor: grabbing; opacity: 0.8; }
+        .photo-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+        .thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); cursor: zoom-in; }
+        .filename { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .remove-btn { color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 5px; font-weight: bold; }
+
+        /* Audio Preview Row */
+        .audio-row { display: flex; gap: 10px; align-items: center; }
+        .play-btn { background: #f3f4f6; border: 1px solid var(--border); border-radius: 8px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+        
+        /* Progress Bar */
+        .progress-wrapper { margin-top: 25px; display: none; width: 100%; }
+        .progress-container { width: 100%; background: #e5e7eb; border-radius: 6px; overflow: hidden; height: 10px; }
+        .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease-out; }
+        #status-text { text-align: center; margin-top: 10px; font-weight: 600; font-size: 13px; color: #4b5563; }
+        
+        /* Video Player */
+        #video-container { display: none; width: 100%; text-align: center; }
+        video { width: 100%; max-width: 300px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+        .placeholder-text { color: #9ca3af; font-weight: 500; font-size: 14px; text-align: center; }
+
+        /* Image Modal */
+        #image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; cursor: zoom-out; }
+        #image-modal img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+    <div class="layout-wrapper">
+        
+        <!-- LEFT COLUMN: FORM -->
+        <div class="form-col">
+            <h2>Broadlands Family Practice Reel Studio</h2>
+            <form id="reelForm">
+                
+                <div class="form-group">
+                    <label>1. Photos</label>
+                    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+                        Drop files or images from web here <br><span style="font-size:12px; font-weight:normal;">(or click to browse)</span>
+                    </div>
+                    <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+                    <ul id="photo-list"></ul>
+                </div>
+
+                <div class="form-group">
+                    <label>2. Background Audio</label>
+                    <div class="audio-row">
+                        <select id="preset-audio" name="preset_audio" style="flex: 1;">
+                            <option value="">-- Select a preset track --</option>
+                        </select>
+                        <button type="button" id="play-preview" class="play-btn" title="Preview Audio">▶</button>
+                    </div>
+                    <div style="margin: 10px 0; font-size: 11px; text-align: center; color: #9ca3af; font-weight: bold;">OR UPLOAD CUSTOM</div>
+                    <input type="file" name="custom_audio" accept="audio/*">
+                </div>
+                <audio id="audio-player" style="display:none;"></audio>
+
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Duration per Photo</label>
+                        <input type="number" name="duration" value="4" step="0.5" min="1">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Fade Transition</label>
+                        <input type="number" name="fade" value="0.5" step="0.1" min="0.1">
+                    </div>
+                </div>
+
+                <button type="submit" id="generate-btn" class="btn">Generate Reel</button>
+            </form>
+        </div>
+
+        <!-- RIGHT COLUMN: OUTPUT -->
+        <div class="video-col" id="output-col">
+            <div id="placeholder-text" class="placeholder-text">Your final video will appear here.</div>
+            
+            <div class="progress-wrapper" id="progress-wrapper">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div id="status-text">Starting... (may take a while)</div>
+            </div>
+
+            <div id="video-container">
+                <h3 style="font-size: 15px; margin-top: 0;">Reel Ready!</h3>
+                <!-- Muted removed so it plays with audio automatically on interaction -->
+                <video id="final-video" controls autoplay></video>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Image Modal -->
+    <div id="image-modal" onclick="this.style.display='none'">
+        <img id="modal-img">
+    </div>
+
+    <script>
+        let selectedItems = []; // Array to hold {type: 'file'|'url', data: File|String, name: String}
+        
+        const photoList = document.getElementById('photo-list');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+
+        // Fetch audio presets
+        fetch('/audio-list').then(res => res.json()).then(files => {
+            const select = document.getElementById('preset-audio');
+            files.forEach(file => {
+                let opt = document.createElement('option');
+                opt.value = file; opt.innerHTML = file;
+                select.appendChild(opt);
+            });
+        });
+
+        // Audio Preview Logic
+        const player = document.getElementById('audio-player');
+        const playBtn = document.getElementById('play-preview');
+        const audioSelect = document.getElementById('preset-audio');
+
+        playBtn.onclick = () => {
+            if (!audioSelect.value) return;
+            if (!player.paused && player.src.includes(encodeURIComponent(audioSelect.value))) {
+                player.pause(); playBtn.innerText = "▶";
+            } else {
+                player.src = `/audio/${audioSelect.value}`; player.play(); playBtn.innerText = "⏸";
+            }
+        };
+        audioSelect.onchange = () => { playBtn.innerText = "▶"; player.pause(); };
+
+        // Prevent browser from opening dragged files
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, e => e.preventDefault());
+            dropZone.addEventListener(eventName, e => e.preventDefault());
+        });
+
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        
+        // Handle Global Drop Zone (Files & Web URLs)
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('dragover');
+            
+            // Check for Local Files
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                Array.from(e.dataTransfer.files).forEach(f => {
+                    selectedItems.push({ type: 'file', data: f, name: f.name });
+                });
+                renderList();
+            } else {
+                // Check for Web Image URLs (e.g., dragged from ChatGPT)
+                let html = e.dataTransfer.getData('text/html');
+                let url = '';
+                if (html) {
+                    let match = html.match(/src\s*=\s*"([^"]+)"/);
+                    if (match) url = match[1].replace(/&amp;/g, '&'); // Clean HTML entities
+                }
+                if (!url) {
+                    let uriList = e.dataTransfer.getData('text/uri-list');
+                    if (uriList) url = uriList.split('\n')[0];
+                }
+                
+                if (url) {
+                    selectedItems.push({ type: 'url', data: url, name: 'Web Image' });
+                    renderList();
+                }
+            }
+        });
+
+        // Standard File Input
+        fileInput.addEventListener('change', (e) => {
+            Array.from(e.target.files).forEach(f => selectedItems.push({ type: 'file', data: f, name: f.name }));
+            renderList();
+        });
+
+        function renderList() {
+            photoList.innerHTML = '';
+            selectedItems.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.draggable = true;
+                
+                const imgUrl = item.type === 'file' ? URL.createObjectURL(item.data) : item.data;
+                
+                li.innerHTML = `
+                    <div class="photo-info">
+                        <img src="${imgUrl}" class="thumb" onclick="showModal('${imgUrl}')">
+                        <span class="filename">${item.name}</span>
+                    </div>
+                    <span class="remove-btn" onclick="removeItem(${index})" title="Remove">✕</span>
+                `;
+                
+                // Drag & Drop Reordering logic inside the list
+                li.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', index));
+                li.addEventListener('dragover', (e) => e.preventDefault());
+                li.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation(); // Stop from triggering the main dropzone
+                    const draggedIndex = e.dataTransfer.getData('text/plain');
+                    if (draggedIndex === "") return;
+                    const draggedItem = selectedItems[draggedIndex];
+                    selectedItems.splice(draggedIndex, 1);
+                    selectedItems.splice(index, 0, draggedItem);
+                    renderList();
+                });
+                photoList.appendChild(li);
+            });
+        }
+
+        window.removeItem = function(index) {
+            selectedItems.splice(index, 1);
+            renderList();
+        }
+
+        window.showModal = function(src) {
+            document.getElementById('modal-img').src = src;
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+
+        // Form Submission
+        document.getElementById('reelForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if(selectedItems.length === 0) return alert("Please select some photos first!");
+
+            const btn = document.getElementById('generate-btn');
+            const progressWrapper = document.getElementById('progress-wrapper');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('status-text');
+            const videoContainer = document.getElementById('video-container');
+            const placeholder = document.getElementById('placeholder-text');
+            
+            // RESET Progress state cleanly
+            progressBar.style.width = '0%';
+            statusText.innerText = "Starting... (may take a while)";
+            
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            placeholder.style.display = "none";
+            videoContainer.style.display = "none";
+            progressWrapper.style.display = "block";
+            
+            player.pause(); 
+            playBtn.innerText = "▶";
+            
+            const formData = new FormData(e.target);
+            formData.delete('images'); 
+            
+            // Append items in exact visual order
+            selectedItems.forEach((item, i) => {
+                if (item.type === 'file') {
+                    formData.append(`item_${i}_file`, item.data);
+                } else {
+                    formData.append(`item_${i}_url`, item.data);
+                }
+            });
+            formData.append('total_items', selectedItems.length);
+
+            const pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/progress');
+                    const data = await res.json();
+                    progressBar.style.width = data.percent + "%";
+                    statusText.innerText = `${data.action} (${data.percent}%)`;
+                } catch(e) {}
+            }, 200);
+
+            try {
+                const response = await fetch('/generate', { method: 'POST', body: formData });
+                const result = await response.json();
+                
+                clearInterval(pollInterval);
+                progressBar.style.width = "100%";
+                statusText.innerText = "Complete (sent to Downloads)";
+                btn.innerText = "Generate Another Reel";
+                btn.disabled = false;
+
+                if (result.status === 'success') {
+                    const a = document.createElement('a');
+                    a.href = `/${result.file}`;
+                    a.download = `Reel_${Date.now()}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    const videoElement = document.getElementById('final-video');
+                    videoElement.src = `/${result.file}?t=${Date.now()}`; 
+                    videoContainer.style.display = "block";
+                }
+            } catch (err) {
+                clearInterval(pollInterval);
+                statusText.innerText = "Error generating video.";
+                btn.disabled = false;
+                btn.innerText = "Try Again";
+            }
+        };
+    </script>
+</body>
+</html>
