@@ -12,8 +12,10 @@
         .form-col { flex: 1.2; }
         .video-col { flex: 0.8; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb; border-radius: var(--radius); padding: 20px; border: 1px dashed #d1d5db; min-height: 400px; }
         
-        h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 25px; letter-spacing: -0.5px; }
+        h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 7px; letter-spacing: -0.5px; }
         .form-group { margin-bottom: 22px; }
+        .header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .header-logo { width: 45px; height: 45px; object-fit: contain; border-radius: 8px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
         input[type="number"], input[type="text"], select, input[type="file"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; background: #fdfdfd; }
         
@@ -58,7 +60,10 @@
         
         <!-- LEFT COLUMN: FORM -->
         <div class="form-col">
-            <h2>Broadlands Family Practice Reel Studio</h2>
+            <div class="header-row">
+                <img src="bfpfilm.png" alt="Logo" class="header-logo">
+                <h2>Broadlands Family Practice Reel Studio</h2>
+            </div>
             <form id="reelForm">
                 
                 <div class="form-group">
